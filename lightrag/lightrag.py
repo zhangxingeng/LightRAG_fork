@@ -1,11 +1,19 @@
 import asyncio
 import os
-from tqdm.asyncio import tqdm as tqdm_async
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from functools import partial
-from typing import Type, cast
+from typing import Any, Type, cast
 
+from tqdm.asyncio import tqdm as tqdm_async
+
+from .base import (
+    BaseGraphStorage,
+    BaseKVStorage,
+    BaseVectorStorage,
+    QueryParam,
+    StorageNameSpace,
+)
 from .llm import (
     gpt_4o_mini_complete,
     openai_embedding,
@@ -17,27 +25,18 @@ from .operate import (
     kg_query,
     naive_query,
 )
-
-from .utils import (
-    EmbeddingFunc,
-    compute_mdhash_id,
-    limit_async_func_call,
-    convert_response_to_json,
-    logger,
-    set_logger,
-)
-from .base import (
-    BaseGraphStorage,
-    BaseKVStorage,
-    BaseVectorStorage,
-    StorageNameSpace,
-    QueryParam,
-)
-
 from .storage import (
     JsonKVStorage,
     NanoVectorDBStorage,
     NetworkXStorage,
+)
+from .utils import (
+    EmbeddingFunc,
+    compute_mdhash_id,
+    convert_response_to_json,
+    limit_async_func_call,
+    logger,
+    set_logger,
 )
 
 # future KG integrations
@@ -74,7 +73,7 @@ Neo4JStorage = lazy_external_import(".kg.neo4j_impl", "Neo4JStorage")
 OracleKVStorage = lazy_external_import(".kg.oracle_impl", "OracleKVStorage")
 OracleGraphStorage = lazy_external_import(".kg.oracle_impl", "OracleGraphStorage")
 OracleVectorDBStorage = lazy_external_import(".kg.oracle_impl", "OracleVectorDBStorage")
-MilvusVectorDBStorge = lazy_external_import(".kg.milvus_impl", "MilvusVectorDBStorge")
+MilvusVectorDBStorage = lazy_external_import(".kg.milvus_impl", "MilvusVectorDBStorage")
 MongoKVStorage = lazy_external_import(".kg.mongo_impl", "MongoKVStorage")
 ChromaVectorDBStorage = lazy_external_import(".kg.chroma_impl", "ChromaVectorDBStorage")
 TiDBKVStorage = lazy_external_import(".kg.tidb_impl", "TiDBKVStorage")
@@ -223,7 +222,7 @@ class LightRAG:
         # add embedding func by walter over
         ####
 
-        self.entities_vdb = self.vector_db_storage_cls(
+        self.entities_vdb: BaseVectorStorage = self.vector_db_storage_cls(
             namespace="entities",
             global_config=asdict(self),
             embedding_func=self.embedding_func,
@@ -256,7 +255,7 @@ class LightRAG:
             )
         )
 
-    def _get_storage_class(self) -> Type[BaseGraphStorage]:
+    def _get_storage_class(self) -> dict[str, Any]:
         return {
             # kv storage
             "JsonKVStorage": JsonKVStorage,
@@ -266,7 +265,7 @@ class LightRAG:
             # vector storage
             "NanoVectorDBStorage": NanoVectorDBStorage,
             "OracleVectorDBStorage": OracleVectorDBStorage,
-            "MilvusVectorDBStorge": MilvusVectorDBStorge,
+            "MilvusVectorDBStorage": MilvusVectorDBStorage,
             "ChromaVectorDBStorage": ChromaVectorDBStorage,
             "TiDBVectorDBStorage": TiDBVectorDBStorage,
             # graph storage

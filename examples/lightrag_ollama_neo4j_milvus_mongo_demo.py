@@ -1,6 +1,7 @@
 import os
+
 from lightrag import LightRAG, QueryParam
-from lightrag.llm import ollama_model_complete, ollama_embed
+from lightrag.llm import ollama_embed, ollama_model_complete
 from lightrag.utils import EmbeddingFunc
 
 # WorkingDir
@@ -42,7 +43,7 @@ rag = LightRAG(
     ),
     kv_storage="MongoKVStorage",
     graph_storage="Neo4JStorage",
-    vector_storage="MilvusVectorDBStorge",
+    vector_storage="MilvusVectorDBStorage",
 )
 
 file = "./book.txt"
