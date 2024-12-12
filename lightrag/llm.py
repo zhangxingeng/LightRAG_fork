@@ -61,9 +61,7 @@ async def openai_complete_if_cache(
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
 
-    openai_async_client = (
-        AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
-    )
+    openai_async_client = AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
     kwargs.pop("hashing_kv", None)
     kwargs.pop("keyword_extraction", None)
     messages = []
@@ -78,13 +76,9 @@ async def openai_complete_if_cache(
     logger.debug(f"System prompt: {system_prompt}")
     logger.debug("Full context:")
     if "response_format" in kwargs:
-        response = await openai_async_client.beta.chat.completions.parse(
-            model=model, messages=messages, **kwargs
-        )
+        response = await openai_async_client.beta.chat.completions.parse(model=model, messages=messages, **kwargs)
     else:
-        response = await openai_async_client.chat.completions.create(
-            model=model, messages=messages, **kwargs
-        )
+        response = await openai_async_client.chat.completions.create(model=model, messages=messages, **kwargs)
 
     if hasattr(response, "__aiter__"):
 
@@ -140,9 +134,7 @@ async def azure_openai_complete_if_cache(
     if prompt is not None:
         messages.append({"role": "user", "content": prompt})
 
-    response = await openai_async_client.chat.completions.create(
-        model=model, messages=messages, **kwargs
-    )
+    response = await openai_async_client.chat.completions.create(model=model, messages=messages, **kwargs)
     content = response.choices[0].message.content
 
     return content
@@ -167,15 +159,9 @@ async def bedrock_complete_if_cache(
     aws_session_token=None,
     **kwargs,
 ) -> str:
-    os.environ["AWS_ACCESS_KEY_ID"] = os.environ.get(
-        "AWS_ACCESS_KEY_ID", aws_access_key_id
-    )
-    os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get(
-        "AWS_SECRET_ACCESS_KEY", aws_secret_access_key
-    )
-    os.environ["AWS_SESSION_TOKEN"] = os.environ.get(
-        "AWS_SESSION_TOKEN", aws_session_token
-    )
+    os.environ["AWS_ACCESS_KEY_ID"] = os.environ.get("AWS_ACCESS_KEY_ID", aws_access_key_id)
+    os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get("AWS_SECRET_ACCESS_KEY", aws_secret_access_key)
+    os.environ["AWS_SESSION_TOKEN"] = os.environ.get("AWS_SESSION_TOKEN", aws_session_token)
     kwargs.pop("hashing_kv", None)
     # Fix message history format
     messages = []
@@ -200,14 +186,10 @@ async def bedrock_complete_if_cache(
         "top_p": "topP",
         "stop_sequences": "stopSequences",
     }
-    if inference_params := list(
-        set(kwargs) & set(["max_tokens", "temperature", "top_p", "stop_sequences"])
-    ):
+    if inference_params := list(set(kwargs) & set(["max_tokens", "temperature", "top_p", "stop_sequences"])):
         args["inferenceConfig"] = {}
         for param in inference_params:
-            args["inferenceConfig"][inference_params_map.get(param, param)] = (
-                kwargs.pop(param)
-            )
+            args["inferenceConfig"][inference_params_map.get(param, param)] = kwargs.pop(param)
 
     # Call model via Converse API
     session = aioboto3.Session()
@@ -222,12 +204,8 @@ async def bedrock_complete_if_cache(
 
 @lru_cache(maxsize=1)
 def initialize_hf_model(model_name):
-    hf_tokenizer = AutoTokenizer.from_pretrained(
-        model_name, device_map="auto", trust_remote_code=True
-    )
-    hf_model = AutoModelForCausalLM.from_pretrained(
-        model_name, device_map="auto", trust_remote_code=True
-    )
+    hf_tokenizer = AutoTokenizer.from_pretrained(model_name, device_map="auto", trust_remote_code=True)
+    hf_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", trust_remote_code=True)
     if hf_tokenizer.pad_token is None:
         hf_tokenizer.pad_token = hf_tokenizer.eos_token
 
@@ -256,47 +234,23 @@ async def hf_model_if_cache(
     kwargs.pop("hashing_kv", None)
     input_prompt = ""
     try:
-        input_prompt = hf_tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
+        input_prompt = hf_tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     except Exception:
         try:
             ori_message = copy.deepcopy(messages)
             if messages[0]["role"] == "system":
-                messages[1]["content"] = (
-                    "<system>"
-                    + messages[0]["content"]
-                    + "</system>\n"
-                    + messages[1]["content"]
-                )
+                messages[1]["content"] = "<system>" + messages[0]["content"] + "</system>\n" + messages[1]["content"]
                 messages = messages[1:]
-                input_prompt = hf_tokenizer.apply_chat_template(
-                    messages, tokenize=False, add_generation_prompt=True
-                )
+                input_prompt = hf_tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         except Exception:
             len_message = len(ori_message)
             for msgid in range(len_message):
-                input_prompt = (
-                    input_prompt
-                    + "<"
-                    + ori_message[msgid]["role"]
-                    + ">"
-                    + ori_message[msgid]["content"]
-                    + "</"
-                    + ori_message[msgid]["role"]
-                    + ">\n"
-                )
+                input_prompt = input_prompt + "<" + ori_message[msgid]["role"] + ">" + ori_message[msgid]["content"] + "</" + ori_message[msgid]["role"] + ">\n"
 
-    input_ids = hf_tokenizer(
-        input_prompt, return_tensors="pt", padding=True, truncation=True
-    ).to("cuda")
+    input_ids = hf_tokenizer(input_prompt, return_tensors="pt", padding=True, truncation=True).to("cuda")
     inputs = {k: v.to(hf_model.device) for k, v in input_ids.items()}
-    output = hf_model.generate(
-        **input_ids, max_new_tokens=512, num_return_sequences=1, early_stopping=True
-    )
-    response_text = hf_tokenizer.decode(
-        output[0][len(inputs["input_ids"][0]) :], skip_special_tokens=True
-    )
+    output = hf_model.generate(**input_ids, max_new_tokens=512, num_return_sequences=1, early_stopping=True)
+    response_text = hf_tokenizer.decode(output[0][len(inputs["input_ids"][0]) :], skip_special_tokens=True)
 
     return response_text
 
@@ -352,12 +306,8 @@ def initialize_lmdeploy_pipeline(
 
     lmdeploy_pipe = pipeline(
         model_path=model,
-        backend_config=TurbomindEngineConfig(
-            tp=tp, model_format=model_format, quant_policy=quant_policy
-        ),
-        chat_template_config=(
-            ChatTemplateConfig(model_name=chat_template) if chat_template else None
-        ),
+        backend_config=TurbomindEngineConfig(tp=tp, model_format=model_format, quant_policy=quant_policy),
+        chat_template_config=(ChatTemplateConfig(model_name=chat_template) if chat_template else None),
         log_level="WARNING",
     )
     return lmdeploy_pipe
@@ -422,10 +372,7 @@ async def lmdeploy_model_if_cache(
 
     version = version_info
     if do_sample is not None and version < (0, 6, 0):
-        raise RuntimeError(
-            "`do_sample` parameter is not supported by lmdeploy until "
-            f"v0.6.0, but currently using lmdeloy {lmdeploy.__version__}"
-        )
+        raise RuntimeError("`do_sample` parameter is not supported by lmdeploy until " f"v0.6.0, but currently using lmdeloy {lmdeploy.__version__}")
     else:
         do_sample = True
         gen_params.update(do_sample=do_sample)
@@ -469,9 +416,7 @@ class GPTKeywordExtractionFormat(BaseModel):
     low_level_keywords: List[str]
 
 
-async def openai_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> Union[str, AsyncIterator[str]]:
+async def openai_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> Union[str, AsyncIterator[str]]:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     if keyword_extraction:
         kwargs["response_format"] = "json"
@@ -485,9 +430,7 @@ async def openai_complete(
     )
 
 
-async def gpt_4o_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def gpt_4o_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     if keyword_extraction:
         kwargs["response_format"] = GPTKeywordExtractionFormat
@@ -500,9 +443,7 @@ async def gpt_4o_complete(
     )
 
 
-async def gpt_4o_mini_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def gpt_4o_mini_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     if keyword_extraction:
         kwargs["response_format"] = GPTKeywordExtractionFormat
@@ -515,9 +456,7 @@ async def gpt_4o_mini_complete(
     )
 
 
-async def nvidia_openai_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def nvidia_openai_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     result = await openai_complete_if_cache(
         "nvidia/llama-3.1-nemotron-70b-instruct",  # context length 128k
@@ -532,9 +471,7 @@ async def nvidia_openai_complete(
     return result
 
 
-async def azure_openai_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def azure_openai_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     result = await azure_openai_complete_if_cache(
         "conversation-4o-mini",
@@ -548,9 +485,7 @@ async def azure_openai_complete(
     return result
 
 
-async def bedrock_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def bedrock_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     result = await bedrock_complete_if_cache(
         "anthropic.claude-3-haiku-20240307-v1:0",
@@ -564,9 +499,7 @@ async def bedrock_complete(
     return result
 
 
-async def hf_model_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def hf_model_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     model_name = kwargs["hashing_kv"].global_config["llm_model_name"]
     result = await hf_model_if_cache(
@@ -581,9 +514,7 @@ async def hf_model_complete(
     return result
 
 
-async def ollama_model_complete(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> Union[str, AsyncIterator[str]]:
+async def ollama_model_complete(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> Union[str, AsyncIterator[str]]:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     if keyword_extraction:
         kwargs["format"] = "json"
@@ -777,12 +708,8 @@ async def openai_embedding(
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
 
-    openai_async_client = (
-        AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
-    )
-    response = await openai_async_client.embeddings.create(
-        model=model, input=texts, encoding_format="float"
-    )
+    openai_async_client = AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
+    response = await openai_async_client.embeddings.create(model=model, input=texts, encoding_format="float")
     return np.array([dp.embedding for dp in response.data])
 
 
@@ -839,9 +766,7 @@ async def nvidia_openai_embedding(
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
 
-    openai_async_client = (
-        AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
-    )
+    openai_async_client = AsyncOpenAI() if base_url is None else AsyncOpenAI(base_url=base_url)
     response = await openai_async_client.embeddings.create(
         model=model,
         input=texts,
@@ -877,9 +802,7 @@ async def azure_openai_embedding(
         api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
     )
 
-    response = await openai_async_client.embeddings.create(
-        model=model, input=texts, encoding_format="float"
-    )
+    response = await openai_async_client.embeddings.create(model=model, input=texts, encoding_format="float")
     return np.array([dp.embedding for dp in response.data])
 
 
@@ -934,15 +857,9 @@ async def bedrock_embedding(
     aws_secret_access_key=None,
     aws_session_token=None,
 ) -> np.ndarray:
-    os.environ["AWS_ACCESS_KEY_ID"] = os.environ.get(
-        "AWS_ACCESS_KEY_ID", aws_access_key_id
-    )
-    os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get(
-        "AWS_SECRET_ACCESS_KEY", aws_secret_access_key
-    )
-    os.environ["AWS_SESSION_TOKEN"] = os.environ.get(
-        "AWS_SESSION_TOKEN", aws_session_token
-    )
+    os.environ["AWS_ACCESS_KEY_ID"] = os.environ.get("AWS_ACCESS_KEY_ID", aws_access_key_id)
+    os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get("AWS_SECRET_ACCESS_KEY", aws_secret_access_key)
+    os.environ["AWS_SESSION_TOKEN"] = os.environ.get("AWS_SESSION_TOKEN", aws_session_token)
 
     session = aioboto3.Session()
     async with session.client("bedrock-runtime") as bedrock_async_client:
@@ -973,9 +890,7 @@ async def bedrock_embedding(
 
                 embed_texts.append(response_body["embedding"])
         elif model_provider == "cohere":
-            body = json.dumps(
-                {"texts": texts, "input_type": "search_document", "truncate": "NONE"}
-            )
+            body = json.dumps({"texts": texts, "input_type": "search_document", "truncate": "NONE"})
 
             response = await bedrock_async_client.invoke_model(
                 model=model,
@@ -995,9 +910,7 @@ async def bedrock_embedding(
 
 async def hf_embedding(texts: list[str], tokenizer, embed_model) -> np.ndarray:
     device = next(embed_model.parameters()).device
-    input_ids = tokenizer(
-        texts, return_tensors="pt", padding=True, truncation=True
-    ).input_ids.to(device)
+    input_ids = tokenizer(texts, return_tensors="pt", padding=True, truncation=True).input_ids.to(device)
     with torch.no_grad():
         outputs = embed_model(input_ids)
         embeddings = outputs.last_hidden_state.mean(dim=1)
@@ -1089,9 +1002,7 @@ class MultiModel:
         self._current_model = (self._current_model + 1) % len(self._models)
         return self._models[self._current_model]
 
-    async def llm_model_func(
-        self, prompt, system_prompt=None, history_messages=[], **kwargs
-    ) -> str:
+    async def llm_model_func(self, prompt, system_prompt=None, history_messages=[], **kwargs) -> str:
         kwargs.pop("model", None)  # stop from overwriting the custom model name
         kwargs.pop("keyword_extraction", None)
         kwargs.pop("mode", None)

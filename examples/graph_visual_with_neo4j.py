@@ -103,14 +103,10 @@ def main():
         # Execute queries in batches
         with driver.session() as session:
             # Insert nodes in batches
-            session.execute_write(
-                process_in_batches, create_nodes_query, nodes, BATCH_SIZE_NODES
-            )
+            session.execute_write(process_in_batches, create_nodes_query, nodes, BATCH_SIZE_NODES)
 
             # Insert edges in batches
-            session.execute_write(
-                process_in_batches, create_edges_query, edges, BATCH_SIZE_EDGES
-            )
+            session.execute_write(process_in_batches, create_edges_query, edges, BATCH_SIZE_EDGES)
 
             # Set displayName and labels
             session.run(set_displayname_and_labels_query)

@@ -38,9 +38,7 @@ rag = LightRAG(
     embedding_func=EmbeddingFunc(
         embedding_dim=1024,
         max_token_size=8192,
-        func=lambda texts: ollama_embed(
-            texts=texts, embed_model="bge-m3:latest", host="http://127.0.0.1:11434"
-        ),
+        func=lambda texts: ollama_embed(texts=texts, embed_model="bge-m3:latest", host="http://127.0.0.1:11434"),
     ),
     kv_storage="MongoKVStorage",
     graph_storage="Neo4JStorage",
@@ -51,6 +49,4 @@ file = "./book.txt"
 with open(file, "r") as f:
     rag.insert(f.read())
 
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid")))

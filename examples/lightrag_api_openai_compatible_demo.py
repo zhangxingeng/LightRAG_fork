@@ -32,9 +32,7 @@ if not os.path.exists(WORKING_DIR):
 # LLM model function
 
 
-async def llm_model_func(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def llm_model_func(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     return await openai_complete_if_cache(
         LLM_MODEL,
         prompt,
@@ -104,9 +102,7 @@ async def query_endpoint(request: QueryRequest):
             None,
             lambda: rag.query(
                 request.query,
-                param=QueryParam(
-                    mode=request.mode, only_need_context=request.only_need_context
-                ),
+                param=QueryParam(mode=request.mode, only_need_context=request.only_need_context),
             ),
         )
         return Response(status="success", data=result)

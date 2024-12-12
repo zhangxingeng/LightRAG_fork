@@ -111,9 +111,7 @@ def always_get_an_event_loop() -> asyncio.AbstractEventLoop:
 
 @dataclass
 class LightRAG:
-    working_dir: str = field(
-        default_factory=lambda: f"./lightrag_cache_{datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}"
-    )
+    working_dir: str = field(default_factory=lambda: f"./lightrag_cache_{datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}")
     # Default not to use embedding cache
     embedding_cache_config: dict = field(
         default_factory=lambda: {
@@ -184,15 +182,9 @@ class LightRAG:
 
         # @TODO: should move all storage setup here to leverage initial start params attached to self.
 
-        self.key_string_value_json_storage_cls: Type[BaseKVStorage] = (
-            self._get_storage_class()[self.kv_storage]
-        )
-        self.vector_db_storage_cls: Type[BaseVectorStorage] = self._get_storage_class()[
-            self.vector_storage
-        ]
-        self.graph_storage_cls: Type[BaseGraphStorage] = self._get_storage_class()[
-            self.graph_storage
-        ]
+        self.key_string_value_json_storage_cls: Type[BaseKVStorage] = self._get_storage_class()[self.kv_storage]
+        self.vector_db_storage_cls: Type[BaseVectorStorage] = self._get_storage_class()[self.vector_storage]
+        self.graph_storage_cls: Type[BaseGraphStorage] = self._get_storage_class()[self.graph_storage]
 
         if not os.path.exists(self.working_dir):
             logger.info(f"Creating working directory {self.working_dir}")
@@ -207,9 +199,7 @@ class LightRAG:
             if self.enable_llm_cache
             else None
         )
-        self.embedding_func = limit_async_func_call(self.embedding_func_max_async)(
-            self.embedding_func
-        )
+        self.embedding_func = limit_async_func_call(self.embedding_func_max_async)(self.embedding_func)
 
         ####
         # add embedding func by walter
@@ -299,10 +289,7 @@ class LightRAG:
             if isinstance(string_or_strings, str):
                 string_or_strings = [string_or_strings]
 
-            new_docs = {
-                compute_mdhash_id(c.strip(), prefix="doc-"): {"content": c.strip()}
-                for c in string_or_strings
-            }
+            new_docs = {compute_mdhash_id(c.strip(), prefix="doc-"): {"content": c.strip()} for c in string_or_strings}
             _add_doc_keys = await self.full_docs.filter_keys(list(new_docs.keys()))
             new_docs = {k: v for k, v in new_docs.items() if k in _add_doc_keys}
             if not len(new_docs):
@@ -312,9 +299,7 @@ class LightRAG:
             logger.info(f"[New Docs] inserting {len(new_docs)} docs")
 
             inserting_chunks = {}
-            for doc_key, doc in tqdm_async(
-                new_docs.items(), desc="Chunking documents", unit="doc"
-            ):
+            for doc_key, doc in tqdm_async(new_docs.items(), desc="Chunking documents", unit="doc"):
                 chunks = {
                     compute_mdhash_id(dp["content"], prefix="chunk-"): {
                         **dp,
@@ -328,12 +313,8 @@ class LightRAG:
                     )
                 }
                 inserting_chunks.update(chunks)
-            _add_chunk_keys = await self.text_chunks.filter_keys(
-                list(inserting_chunks.keys())
-            )
-            inserting_chunks = {
-                k: v for k, v in inserting_chunks.items() if k in _add_chunk_keys
-            }
+            _add_chunk_keys = await self.text_chunks.filter_keys(list(inserting_chunks.keys()))
+            inserting_chunks = {k: v for k, v in inserting_chunks.items() if k in _add_chunk_keys}
             if not len(inserting_chunks):
                 logger.warning("All chunks are already in the storage")
                 return
@@ -413,9 +394,7 @@ class LightRAG:
 
                 # Log if source_id is UNKNOWN
                 if source_id == "UNKNOWN":
-                    logger.warning(
-                        f"Entity '{entity_name}' has an UNKNOWN source_id. Please check the source mapping."
-                    )
+                    logger.warning(f"Entity '{entity_name}' has an UNKNOWN source_id. Please check the source mapping.")
 
                 # Prepare node data
                 node_data = {
@@ -424,9 +403,7 @@ class LightRAG:
                     "source_id": source_id,
                 }
                 # Insert node data into the knowledge graph
-                await self.chunk_entity_relation_graph.upsert_node(
-                    entity_name, node_data=node_data
-                )
+                await self.chunk_entity_relation_graph.upsert_node(entity_name, node_data=node_data)
                 node_data["entity_name"] = entity_name
                 all_entities_data.append(node_data)
                 update_storage = True
@@ -445,15 +422,11 @@ class LightRAG:
 
                 # Log if source_id is UNKNOWN
                 if source_id == "UNKNOWN":
-                    logger.warning(
-                        f"Relationship from '{src_id}' to '{tgt_id}' has an UNKNOWN source_id. Please check the source mapping."
-                    )
+                    logger.warning(f"Relationship from '{src_id}' to '{tgt_id}' has an UNKNOWN source_id. Please check the source mapping.")
 
                 # Check if nodes exist in the knowledge graph
                 for need_insert_id in [src_id, tgt_id]:
-                    if not (
-                        await self.chunk_entity_relation_graph.has_node(need_insert_id)
-                    ):
+                    if not (await self.chunk_entity_relation_graph.has_node(need_insert_id)):
                         await self.chunk_entity_relation_graph.upsert_node(
                             need_insert_id,
                             node_data={
@@ -500,10 +473,7 @@ class LightRAG:
                     compute_mdhash_id(dp["src_id"] + dp["tgt_id"], prefix="rel-"): {
                         "src_id": dp["src_id"],
                         "tgt_id": dp["tgt_id"],
-                        "content": dp["keywords"]
-                        + dp["src_id"]
-                        + dp["tgt_id"]
-                        + dp["description"],
+                        "content": dp["keywords"] + dp["src_id"] + dp["tgt_id"] + dp["description"],
                     }
                     for dp in all_relationships_data
                 }
@@ -576,9 +546,7 @@ class LightRAG:
             await self.relationships_vdb.delete_relation(entity_name)
             await self.chunk_entity_relation_graph.delete_node(entity_name)
 
-            logger.info(
-                f"Entity '{entity_name}' and its relationships have been deleted."
-            )
+            logger.info(f"Entity '{entity_name}' and its relationships have been deleted.")
             await self._delete_by_entity_done()
         except Exception as e:
             logger.error(f"Error while deleting entity '{entity_name}': {e}")

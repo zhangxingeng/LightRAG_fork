@@ -96,9 +96,7 @@ class OracleDB:
         for k, v in TABLES.items():
             try:
                 if k.lower() == "lightrag_graph":
-                    await self.query(
-                        "SELECT id FROM GRAPH_TABLE (lightrag_graph MATCH (a) COLUMNS (a.id)) fetch first row only"
-                    )
+                    await self.query("SELECT id FROM GRAPH_TABLE (lightrag_graph MATCH (a) COLUMNS (a.id)) fetch first row only")
                 else:
                     await self.query("SELECT 1 FROM {k}".format(k=k))
             except Exception as e:
@@ -114,9 +112,7 @@ class OracleDB:
 
         logger.info("Finished check all tables in Oracle database")
 
-    async def query(
-        self, sql: str, params: dict = None, multirows: bool = False
-    ) -> Union[dict, None]:
+    async def query(self, sql: str, params: dict = None, multirows: bool = False) -> Union[dict, None]:
         async with self.pool.acquire() as connection:
             connection.inputtypehandler = self.input_type_handler
             connection.outputtypehandler = self.output_type_handler
@@ -189,9 +185,7 @@ class OracleKVStorage(BaseKVStorage):
     # Query by id
     async def get_by_ids(self, ids: list[str], fields=None) -> Union[list[dict], None]:
         """根据 id 获取 doc_chunks 数据"""
-        SQL = SQL_TEMPLATES["get_by_ids_" + self.namespace].format(
-            ids=",".join([f"'{id}'" for id in ids])
-        )
+        SQL = SQL_TEMPLATES["get_by_ids_" + self.namespace].format(ids=",".join([f"'{id}'" for id in ids]))
         params = {"workspace": self.db.workspace}
         # print("get_by_ids:"+SQL)
         # print(params)
@@ -205,9 +199,7 @@ class OracleKVStorage(BaseKVStorage):
 
     async def filter_keys(self, keys: list[str]) -> set[str]:
         """过滤掉重复内容"""
-        SQL = SQL_TEMPLATES["filter_keys"].format(
-            table_name=N_T[self.namespace], ids=",".join([f"'{id}'" for id in keys])
-        )
+        SQL = SQL_TEMPLATES["filter_keys"].format(table_name=N_T[self.namespace], ids=",".join([f"'{id}'" for id in keys]))
         params = {"workspace": self.db.workspace}
         try:
             await self.db.query(SQL, params)
@@ -240,13 +232,8 @@ class OracleKVStorage(BaseKVStorage):
                 for k, v in data.items()
             ]
             contents = [v["content"] for v in data.values()]
-            batches = [
-                contents[i : i + self._max_batch_size]
-                for i in range(0, len(contents), self._max_batch_size)
-            ]
-            embeddings_list = await asyncio.gather(
-                *[self.embedding_func(batch) for batch in batches]
-            )
+            batches = [contents[i : i + self._max_batch_size] for i in range(0, len(contents), self._max_batch_size)]
+            embeddings_list = await asyncio.gather(*[self.embedding_func(batch) for batch in batches])
             embeddings = np.concatenate(embeddings_list)
             for i, d in enumerate(list_data):
                 d["__vector__"] = embeddings[i]
@@ -343,13 +330,8 @@ class OracleGraphStorage(BaseGraphStorage):
 
         content = entity_name + description
         contents = [content]
-        batches = [
-            contents[i : i + self._max_batch_size]
-            for i in range(0, len(contents), self._max_batch_size)
-        ]
-        embeddings_list = await asyncio.gather(
-            *[self.embedding_func(batch) for batch in batches]
-        )
+        batches = [contents[i : i + self._max_batch_size] for i in range(0, len(contents), self._max_batch_size)]
+        embeddings_list = await asyncio.gather(*[self.embedding_func(batch) for batch in batches])
         embeddings = np.concatenate(embeddings_list)
         content_vector = embeddings[0]
         merge_sql = SQL_TEMPLATES["merge_node"]
@@ -366,9 +348,7 @@ class OracleGraphStorage(BaseGraphStorage):
         await self.db.execute(merge_sql, data)
         # self._graph.add_node(node_id, **node_data)
 
-    async def upsert_edge(
-        self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]
-    ):
+    async def upsert_edge(self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]):
         """插入或更新边"""
         # print("go into upsert edge method")
         source_name = source_node_id
@@ -377,19 +357,12 @@ class OracleGraphStorage(BaseGraphStorage):
         keywords = edge_data["keywords"]
         description = edge_data["description"]
         source_chunk_id = edge_data["source_id"]
-        logger.debug(
-            f"source_name:{source_name}, target_name:{target_name}, keywords: {keywords}"
-        )
+        logger.debug(f"source_name:{source_name}, target_name:{target_name}, keywords: {keywords}")
 
         content = keywords + source_name + target_name + description
         contents = [content]
-        batches = [
-            contents[i : i + self._max_batch_size]
-            for i in range(0, len(contents), self._max_batch_size)
-        ]
-        embeddings_list = await asyncio.gather(
-            *[self.embedding_func(batch) for batch in batches]
-        )
+        batches = [contents[i : i + self._max_batch_size] for i in range(0, len(contents), self._max_batch_size)]
+        embeddings_list = await asyncio.gather(*[self.embedding_func(batch) for batch in batches])
         embeddings = np.concatenate(embeddings_list)
         content_vector = embeddings[0]
         merge_sql = SQL_TEMPLATES["merge_edge"]
@@ -428,9 +401,7 @@ class OracleGraphStorage(BaseGraphStorage):
 
     async def index_done_callback(self):
         """写入graphhml图文件"""
-        logger.info(
-            "Node and edge data had been saved into oracle db already, so nothing to do here!"
-        )
+        logger.info("Node and edge data had been saved into oracle db already, so nothing to do here!")
 
     #################### query method #################
     async def has_node(self, node_id: str) -> bool:
@@ -497,9 +468,7 @@ class OracleGraphStorage(BaseGraphStorage):
             # print("Can't get node!",self.db.workspace, node_id)
             return None
 
-    async def get_edge(
-        self, source_node_id: str, target_node_id: str
-    ) -> Union[dict, None]:
+    async def get_edge(self, source_node_id: str, target_node_id: str) -> Union[dict, None]:
         """根据源和目标节点id获取边"""
         SQL = SQL_TEMPLATES["get_edge"]
         params = {

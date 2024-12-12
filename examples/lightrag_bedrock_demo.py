@@ -19,9 +19,7 @@ rag = LightRAG(
     working_dir=WORKING_DIR,
     llm_model_func=bedrock_complete,
     llm_model_name="Anthropic Claude 3 Haiku // Amazon Bedrock",
-    embedding_func=EmbeddingFunc(
-        embedding_dim=1024, max_token_size=8192, func=bedrock_embedding
-    ),
+    embedding_func=EmbeddingFunc(embedding_dim=1024, max_token_size=8192, func=bedrock_embedding),
 )
 
 with open("./book.txt", "r", encoding="utf-8") as f:
@@ -31,6 +29,4 @@ for mode in ["naive", "local", "global", "hybrid"]:
     print("\n+-" + "-" * len(mode) + "-+")
     print(f"| {mode.capitalize()} |")
     print("+-" + "-" * len(mode) + "-+\n")
-    print(
-        rag.query("What are the top themes in this story?", param=QueryParam(mode=mode))
-    )
+    print(rag.query("What are the top themes in this story?", param=QueryParam(mode=mode)))

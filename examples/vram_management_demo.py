@@ -40,9 +40,7 @@ def insert_texts_with_retry(rag, texts, retries=3, delay=5):
             rag.insert(texts)
             return
         except Exception as e:
-            print(
-                f"Error occurred during insertion: {e}. Retrying in {delay} seconds..."
-            )
+            print(f"Error occurred during insertion: {e}. Retrying in {delay} seconds...")
             time.sleep(delay)
     raise RuntimeError("Failed to insert texts after multiple retries.")
 
@@ -51,38 +49,22 @@ insert_texts_with_retry(rag, texts)
 
 # Perform different types of queries and handle potential errors
 try:
-    print(
-        rag.query(
-            "What are the top themes in this story?", param=QueryParam(mode="naive")
-        )
-    )
+    print(rag.query("What are the top themes in this story?", param=QueryParam(mode="naive")))
 except Exception as e:
     print(f"Error performing naive search: {e}")
 
 try:
-    print(
-        rag.query(
-            "What are the top themes in this story?", param=QueryParam(mode="local")
-        )
-    )
+    print(rag.query("What are the top themes in this story?", param=QueryParam(mode="local")))
 except Exception as e:
     print(f"Error performing local search: {e}")
 
 try:
-    print(
-        rag.query(
-            "What are the top themes in this story?", param=QueryParam(mode="global")
-        )
-    )
+    print(rag.query("What are the top themes in this story?", param=QueryParam(mode="global")))
 except Exception as e:
     print(f"Error performing global search: {e}")
 
 try:
-    print(
-        rag.query(
-            "What are the top themes in this story?", param=QueryParam(mode="hybrid")
-        )
-    )
+    print(rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid")))
 except Exception as e:
     print(f"Error performing hybrid search: {e}")
 

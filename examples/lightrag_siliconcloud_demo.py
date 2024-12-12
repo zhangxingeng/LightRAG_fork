@@ -11,9 +11,7 @@ if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
 
 
-async def llm_model_func(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def llm_model_func(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     return await openai_complete_if_cache(
         "Qwen/Qwen2.5-7B-Instruct",
         prompt,
@@ -49,9 +47,7 @@ asyncio.run(test_funcs())
 rag = LightRAG(
     working_dir=WORKING_DIR,
     llm_model_func=llm_model_func,
-    embedding_func=EmbeddingFunc(
-        embedding_dim=768, max_token_size=512, func=embedding_func
-    ),
+    embedding_func=EmbeddingFunc(embedding_dim=768, max_token_size=512, func=embedding_func),
 )
 
 
@@ -59,21 +55,13 @@ with open("./book.txt") as f:
     rag.insert(f.read())
 
 # Perform naive search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="naive"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="naive")))
 
 # Perform local search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="local"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="local")))
 
 # Perform global search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="global"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="global")))
 
 # Perform hybrid search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid")))

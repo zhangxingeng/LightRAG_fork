@@ -44,12 +44,8 @@ rag = LightRAG(
         max_token_size=5000,
         func=lambda texts: hf_embedding(
             texts,
-            tokenizer=AutoTokenizer.from_pretrained(
-                "sentence-transformers/all-MiniLM-L6-v2"
-            ),
-            embed_model=AutoModel.from_pretrained(
-                "sentence-transformers/all-MiniLM-L6-v2"
-            ),
+            tokenizer=AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2"),
+            embed_model=AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2"),
         ),
     ),
 )
@@ -59,21 +55,13 @@ with open("./book.txt", "r", encoding="utf-8") as f:
     rag.insert(f.read())
 
 # Perform naive search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="naive"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="naive")))
 
 # Perform local search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="local"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="local")))
 
 # Perform global search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="global"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="global")))
 
 # Perform hybrid search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid")))

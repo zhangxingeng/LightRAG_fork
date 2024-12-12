@@ -11,9 +11,7 @@ import numpy as np
 
 ## For Upstage API
 # please check if embedding_dim=4096 in lightrag.py and llm.py in lightrag direcotry
-async def llm_model_func(
-    prompt, system_prompt=None, history_messages=[], **kwargs
-) -> str:
+async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs) -> str:
     return await openai_complete_if_cache(
         "solar-mini",
         prompt,
@@ -65,21 +63,15 @@ def always_get_an_event_loop() -> asyncio.AbstractEventLoop:
     return loop
 
 
-def run_queries_and_save_to_json(
-    queries, rag_instance, query_param, output_file, error_file
-):
+def run_queries_and_save_to_json(queries, rag_instance, query_param, output_file, error_file):
     loop = always_get_an_event_loop()
 
-    with open(output_file, "a", encoding="utf-8") as result_file, open(
-        error_file, "a", encoding="utf-8"
-    ) as err_file:
+    with open(output_file, "a", encoding="utf-8") as result_file, open(error_file, "a", encoding="utf-8") as err_file:
         result_file.write("[\n")
         first_entry = True
 
         for query_text in tqdm(queries, desc="Processing queries", unit="query"):
-            result, error = loop.run_until_complete(
-                process_query(query_text, rag_instance, query_param)
-            )
+            result, error = loop.run_until_complete(process_query(query_text, rag_instance, query_param))
 
             if result:
                 if not first_entry:
@@ -102,14 +94,10 @@ if __name__ == "__main__":
     rag = LightRAG(
         working_dir=WORKING_DIR,
         llm_model_func=llm_model_func,
-        embedding_func=EmbeddingFunc(
-            embedding_dim=4096, max_token_size=8192, func=embedding_func
-        ),
+        embedding_func=EmbeddingFunc(embedding_dim=4096, max_token_size=8192, func=embedding_func),
     )
     query_param = QueryParam(mode=mode)
 
     base_dir = "../datasets/questions"
     queries = extract_queries(f"{base_dir}/{cls}_questions.txt")
-    run_queries_and_save_to_json(
-        queries, rag, query_param, f"{base_dir}/result.json", f"{base_dir}/errors.json"
-    )
+    run_queries_and_save_to_json(queries, rag, query_param, f"{base_dir}/result.json", f"{base_dir}/errors.json")

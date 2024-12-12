@@ -1,8 +1,11 @@
 import os
 
 import requests
+from dotenv import load_dotenv
 from lightrag import LightRAG, QueryParam
 from lightrag.llm import gpt_4o_mini_complete
+
+load_dotenv()
 
 #########
 # Uncomment the below two lines if running in a jupyter notebook to handle the async nature of rag.insert()
@@ -23,7 +26,10 @@ rag = LightRAG(
 
 
 response = requests.get("https://raw.githubusercontent.com/gusye1234/nano-graphrag/main/tests/mock_data.txt")
-rag.insert(response.text)
+rag.insert([response.text[:1000], response.text[1000:2000]])
+
+
+# read some text file from data/ folder with .md ending then append to text_units
 
 # # Perform naive search
 # print(rag.query("What are the top themes in this story?", param=QueryParam(mode="naive")))

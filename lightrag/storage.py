@@ -1,24 +1,24 @@
 import asyncio
 import html
 import os
-from tqdm.asyncio import tqdm as tqdm_async
 from dataclasses import dataclass
 from typing import Any, Union, cast
+
 import networkx as nx
 import numpy as np
 from nano_vectordb import NanoVectorDB
-
-from .utils import (
-    logger,
-    load_json,
-    write_json,
-    compute_mdhash_id,
-)
+from tqdm.asyncio import tqdm as tqdm_async
 
 from .base import (
     BaseGraphStorage,
     BaseKVStorage,
     BaseVectorStorage,
+)
+from .utils import (
+    compute_mdhash_id,
+    load_json,
+    logger,
+    write_json,
 )
 
 
@@ -42,14 +42,7 @@ class JsonKVStorage(BaseKVStorage):
     async def get_by_ids(self, ids, fields=None):
         if fields is None:
             return [self._data.get(id, None) for id in ids]
-        return [
-            (
-                {k: v for k, v in self._data[id].items() if k in fields}
-                if self._data.get(id, None)
-                else None
-            )
-            for id in ids
-        ]
+        return [({k: v for k, v in self._data[id].items() if k in fields} if self._data.get(id, None) else None) for id in ids]
 
     async def filter_keys(self, data: list[str]) -> set[str]:
         return set([s for s in data if s not in self._data])
@@ -68,16 +61,10 @@ class NanoVectorDBStorage(BaseVectorStorage):
     cosine_better_than_threshold: float = 0.2
 
     def __post_init__(self):
-        self._client_file_name = os.path.join(
-            self.global_config["working_dir"], f"vdb_{self.namespace}.json"
-        )
+        self._client_file_name = os.path.join(self.global_config["working_dir"], f"vdb_{self.namespace}.json")
         self._max_batch_size = self.global_config["embedding_batch_num"]
-        self._client = NanoVectorDB(
-            self.embedding_func.embedding_dim, storage_file=self._client_file_name
-        )
-        self.cosine_better_than_threshold = self.global_config.get(
-            "cosine_better_than_threshold", self.cosine_better_than_threshold
-        )
+        self._client = NanoVectorDB(self.embedding_func.embedding_dim, storage_file=self._client_file_name)
+        self.cosine_better_than_threshold = self.global_config.get("cosine_better_than_threshold", self.cosine_better_than_threshold)
 
     async def upsert(self, data: dict[str, dict]):
         logger.info(f"Inserting {len(data)} vectors to {self.namespace}")
@@ -90,35 +77,28 @@ class NanoVectorDBStorage(BaseVectorStorage):
                 **{k1: v1 for k1, v1 in v.items() if k1 in self.meta_fields},
             }
             for k, v in data.items()
-        ]
-        contents = [v["content"] for v in data.values()]
-        batches = [
-            contents[i : i + self._max_batch_size]
-            for i in range(0, len(contents), self._max_batch_size)
-        ]
-
-        async def wrapped_task(batch):
-            result = await self.embedding_func(batch)
-            pbar.update(1)
-            return result
-
-        embedding_tasks = [wrapped_task(batch) for batch in batches]
-        pbar = tqdm_async(
-            total=len(embedding_tasks), desc="Generating embeddings", unit="batch"
-        )
-        embeddings_list = await asyncio.gather(*embedding_tasks)
-
-        embeddings = np.concatenate(embeddings_list)
+        ]  # [{'__id__': '1', ...metadata}]
+        contents: list[str] = [v["content"] for v in data.values()]
+        batches: list[list[str]] = [contents[i : i + self._max_batch_size] for i in range(0, len(contents), self._max_batch_size)]
+        embedding_tasks: list[list[np.ndarray]] = [self.embedding_func(batch) for batch in batches]
+        embeddings_list: list[np.ndarray] = []
+        for f in tqdm_async(
+            asyncio.as_completed(embedding_tasks),
+            total=len(embedding_tasks),
+            desc="Generating embeddings",
+            unit="batch",
+        ):
+            embeddings: np.ndarray = await f
+            embeddings_list.append(embeddings)
+        embeddings: np.ndarray = np.concatenate(embeddings_list)
         if len(embeddings) == len(list_data):
             for i, d in enumerate(list_data):
                 d["__vector__"] = embeddings[i]
-            results = self._client.upsert(datas=list_data)
+            results: list[Data] = self._client.upsert(datas=list_data)
             return results
         else:
             # sometimes the embedding is not returned correctly. just log it.
-            logger.error(
-                f"embedding is not 1-1 with data, {len(embeddings)} != {len(list_data)}"
-            )
+            logger.error(f"embedding is not 1-1 with data, {len(embeddings)} != {len(list_data)}")
 
     async def query(self, query: str, top_k=5):
         embedding = await self.embedding_func([query])
@@ -128,9 +108,7 @@ class NanoVectorDBStorage(BaseVectorStorage):
             top_k=top_k,
             better_than_threshold=self.cosine_better_than_threshold,
         )
-        results = [
-            {**dp, "id": dp["__id__"], "distance": dp["__metrics__"]} for dp in results
-        ]
+        results = [{**dp, "id": dp["__id__"], "distance": dp["__metrics__"]} for dp in results]
         return results
 
     @property
@@ -151,24 +129,16 @@ class NanoVectorDBStorage(BaseVectorStorage):
 
     async def delete_relation(self, entity_name: str):
         try:
-            relations = [
-                dp
-                for dp in self.client_storage["data"]
-                if dp["src_id"] == entity_name or dp["tgt_id"] == entity_name
-            ]
+            relations = [dp for dp in self.client_storage["data"] if dp["src_id"] == entity_name or dp["tgt_id"] == entity_name]
             ids_to_delete = [relation["__id__"] for relation in relations]
 
             if ids_to_delete:
                 self._client.delete(ids_to_delete)
-                logger.info(
-                    f"All relations related to entity {entity_name} have been deleted."
-                )
+                logger.info(f"All relations related to entity {entity_name} have been deleted.")
             else:
                 logger.info(f"No relations found for entity {entity_name}.")
         except Exception as e:
-            logger.error(
-                f"Error while deleting relations for entity {entity_name}: {e}"
-            )
+            logger.error(f"Error while deleting relations for entity {entity_name}: {e}")
 
     async def index_done_callback(self):
         self._client.save()
@@ -184,9 +154,7 @@ class NetworkXStorage(BaseGraphStorage):
 
     @staticmethod
     def write_nx_graph(graph: nx.Graph, file_name):
-        logger.info(
-            f"Writing graph with {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges"
-        )
+        logger.info(f"Writing graph with {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
         nx.write_graphml(graph, file_name)
 
     @staticmethod
@@ -198,9 +166,7 @@ class NetworkXStorage(BaseGraphStorage):
 
         graph = graph.copy()
         graph = cast(nx.Graph, largest_connected_component(graph))
-        node_mapping = {
-            node: html.unescape(node.upper().strip()) for node in graph.nodes()
-        }  # type: ignore
+        node_mapping = {node: html.unescape(node.upper().strip()) for node in graph.nodes()}  # type: ignore
         graph = nx.relabel_nodes(graph, node_mapping)
         return NetworkXStorage._stabilize_graph(graph)
 
@@ -238,14 +204,10 @@ class NetworkXStorage(BaseGraphStorage):
         return fixed_graph
 
     def __post_init__(self):
-        self._graphml_xml_file = os.path.join(
-            self.global_config["working_dir"], f"graph_{self.namespace}.graphml"
-        )
+        self._graphml_xml_file = os.path.join(self.global_config["working_dir"], f"graph_{self.namespace}.graphml")
         preloaded_graph = NetworkXStorage.load_nx_graph(self._graphml_xml_file)
         if preloaded_graph is not None:
-            logger.info(
-                f"Loaded graph from {self._graphml_xml_file} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges"
-            )
+            logger.info(f"Loaded graph from {self._graphml_xml_file} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges")
         self._graph = preloaded_graph or nx.Graph()
         self._node_embed_algorithms = {
             "node2vec": self._node2vec_embed,
@@ -269,9 +231,7 @@ class NetworkXStorage(BaseGraphStorage):
     async def edge_degree(self, src_id: str, tgt_id: str) -> int:
         return self._graph.degree(src_id) + self._graph.degree(tgt_id)
 
-    async def get_edge(
-        self, source_node_id: str, target_node_id: str
-    ) -> Union[dict, None]:
+    async def get_edge(self, source_node_id: str, target_node_id: str) -> Union[dict, None]:
         return self._graph.edges.get((source_node_id, target_node_id))
 
     async def get_node_edges(self, source_node_id: str):
@@ -282,9 +242,7 @@ class NetworkXStorage(BaseGraphStorage):
     async def upsert_node(self, node_id: str, node_data: dict[str, str]):
         self._graph.add_node(node_id, **node_data)
 
-    async def upsert_edge(
-        self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]
-    ):
+    async def upsert_edge(self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]):
         self._graph.add_edge(source_node_id, target_node_id, **edge_data)
 
     async def delete_node(self, node_id: str):

@@ -3,9 +3,7 @@ from openai import OpenAI
 from transformers import GPT2Tokenizer
 
 
-def openai_complete_if_cache(
-    model="gpt-4o", prompt=None, system_prompt=None, history_messages=[], **kwargs
-) -> str:
+def openai_complete_if_cache(model="gpt-4o", prompt=None, system_prompt=None, history_messages=[], **kwargs) -> str:
     openai_client = OpenAI()
 
     messages = []
@@ -14,9 +12,7 @@ def openai_complete_if_cache(
     messages.extend(history_messages)
     messages.append({"role": "user", "content": prompt})
 
-    response = openai_client.chat.completions.create(
-        model=model, messages=messages, **kwargs
-    )
+    response = openai_client.chat.completions.create(model=model, messages=messages, **kwargs)
     return response.choices[0].message.content
 
 

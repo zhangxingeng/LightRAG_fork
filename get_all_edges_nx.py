@@ -11,9 +11,7 @@ def get_all_edges_and_nodes(G):
             {
                 "start": u,
                 "end": v,
-                "label": data.get(
-                    "label", ""
-                ),  # Assuming 'label' is used for edge type
+                "label": data.get("label", ""),  # Assuming 'label' is used for edge type
                 "properties": data,
                 "start_node_properties": G.nodes[u],
                 "end_node_properties": G.nodes[v],

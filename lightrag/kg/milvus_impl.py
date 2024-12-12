@@ -1,25 +1,23 @@
 import asyncio
 import os
-from tqdm.asyncio import tqdm as tqdm_async
 from dataclasses import dataclass
-import numpy as np
-from lightrag.utils import logger
-from ..base import BaseVectorStorage
 
+import numpy as np
 from pymilvus import MilvusClient
+from tqdm.asyncio import tqdm as tqdm_async
+
+from lightrag.utils import logger
+
+from ..base import BaseVectorStorage
 
 
 @dataclass
 class MilvusVectorDBStorge(BaseVectorStorage):
     @staticmethod
-    def create_collection_if_not_exist(
-        client: MilvusClient, collection_name: str, **kwargs
-    ):
+    def create_collection_if_not_exist(client: MilvusClient, collection_name: str, **kwargs):
         if client.has_collection(collection_name):
             return
-        client.create_collection(
-            collection_name, max_length=64, id_type="string", **kwargs
-        )
+        client.create_collection(collection_name, max_length=64, id_type="string", **kwargs)
 
     def __post_init__(self):
         self._client = MilvusClient(
@@ -52,22 +50,17 @@ class MilvusVectorDBStorge(BaseVectorStorage):
             for k, v in data.items()
         ]
         contents = [v["content"] for v in data.values()]
-        batches = [
-            contents[i : i + self._max_batch_size]
-            for i in range(0, len(contents), self._max_batch_size)
-        ]
-
-        async def wrapped_task(batch):
-            result = await self.embedding_func(batch)
-            pbar.update(1)
-            return result
-
-        embedding_tasks = [wrapped_task(batch) for batch in batches]
-        pbar = tqdm_async(
-            total=len(embedding_tasks), desc="Generating embeddings", unit="batch"
-        )
-        embeddings_list = await asyncio.gather(*embedding_tasks)
-
+        batches = [contents[i : i + self._max_batch_size] for i in range(0, len(contents), self._max_batch_size)]
+        embedding_tasks = [self.embedding_func(batch) for batch in batches]
+        embeddings_list = []
+        for f in tqdm_async(
+            asyncio.as_completed(embedding_tasks),
+            total=len(embedding_tasks),
+            desc="Generating embeddings",
+            unit="batch",
+        ):
+            embeddings = await f
+            embeddings_list.append(embeddings)
         embeddings = np.concatenate(embeddings_list)
         for i, d in enumerate(list_data):
             d["vector"] = embeddings[i]
@@ -84,7 +77,4 @@ class MilvusVectorDBStorge(BaseVectorStorage):
             search_params={"metric_type": "COSINE", "params": {"radius": 0.2}},
         )
         print(results)
-        return [
-            {**dp["entity"], "id": dp["id"], "distance": dp["distance"]}
-            for dp in results[0]
-        ]
+        return [{**dp["entity"], "id": dp["id"], "distance": dp["distance"]} for dp in results[0]]

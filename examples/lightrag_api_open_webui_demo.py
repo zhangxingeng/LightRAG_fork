@@ -31,9 +31,7 @@ rag = LightRAG(
     embedding_func=EmbeddingFunc(
         embedding_dim=1024,
         max_token_size=8192,
-        func=lambda texts: ollama_embed(
-            texts=texts, embed_model="bge-m3:latest", host="http://127.0.0.1:11434"
-        ),
+        func=lambda texts: ollama_embed(texts=texts, embed_model="bge-m3:latest", host="http://127.0.0.1:11434"),
     ),
 )
 
@@ -99,9 +97,7 @@ async def ollama_tags():
 
 @app.post("/ollama/api/chat")
 async def ollama_chat(request: OpenWebUIRequest):
-    resp = rag.query(
-        request.messages[-1].content, param=QueryParam(mode="hybrid", stream=True)
-    )
+    resp = rag.query(request.messages[-1].content, param=QueryParam(mode="hybrid", stream=True))
     if inspect.isasyncgen(resp):
 
         async def ollama_resp(chunks):
@@ -110,9 +106,7 @@ async def ollama_chat(request: OpenWebUIRequest):
                     json.dumps(
                         {
                             "model": MODEL_NAME,
-                            "created_at": datetime.now(timezone.utc).strftime(
-                                "%Y-%m-%dT%H:%M:%S.%fZ"
-                            ),
+                            "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                             "message": {
                                 "role": "assistant",
                                 "content": chunk,
