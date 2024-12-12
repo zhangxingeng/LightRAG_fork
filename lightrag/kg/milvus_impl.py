@@ -12,7 +12,7 @@ from ..base import BaseVectorStorage
 
 
 @dataclass
-class MilvusVectorDBStorge(BaseVectorStorage):
+class MilvusVectorDBStorage(BaseVectorStorage):
     @staticmethod
     def create_collection_if_not_exist(client: MilvusClient, collection_name: str, **kwargs):
         if client.has_collection(collection_name):
@@ -31,7 +31,7 @@ class MilvusVectorDBStorge(BaseVectorStorage):
             db_name=os.environ.get("MILVUS_DB_NAME", ""),
         )
         self._max_batch_size = self.global_config["embedding_batch_num"]
-        MilvusVectorDBStorge.create_collection_if_not_exist(
+        MilvusVectorDBStorage.create_collection_if_not_exist(
             self._client,
             self.namespace,
             dimension=self.embedding_func.embedding_dim,

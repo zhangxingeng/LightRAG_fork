@@ -49,12 +49,9 @@ def chunking_by_token_size(content: str, overlap_token_size=128, max_token_size=
     return results
 
 
-async def _handle_entity_relation_summary(
-    entity_or_relation_name: str,
-    description: str,
-    global_config: dict,
-) -> str:
-    use_llm_func: callable = global_config["llm_model_func"]
+async def _handle_entity_relation_summary(entity_or_relation_name: str, description: str, global_config: dict) -> str:
+    """rewrite summary of an entity based on its description"""
+    use_llm_func: Callable = global_config["llm_model_func"]
     llm_max_tokens = global_config["llm_model_max_token_size"]
     tiktoken_model_name = global_config["tiktoken_model_name"]
     summary_max_tokens = global_config["entity_summary_to_max_tokens"]
@@ -76,10 +73,8 @@ async def _handle_entity_relation_summary(
     return summary
 
 
-async def _handle_single_entity_extraction(
-    record_attributes: list[str],
-    chunk_key: str,
-):
+async def _handle_single_entity_extraction(record_attributes: list[str], chunk_key: str):
+    """Just text parsing for field clean up. should be removed for openai"""
     if len(record_attributes) < 4 or record_attributes[0] != '"entity"':
         return None
     # add this record as a node in the G
@@ -97,10 +92,8 @@ async def _handle_single_entity_extraction(
     )
 
 
-async def _handle_single_relationship_extraction(
-    record_attributes: list[str],
-    chunk_key: str,
-):
+async def _handle_single_relationship_extraction(record_attributes: list[str], chunk_key: str):
+    """Just text parsing for field clean up. should be removed for openai"""
     if len(record_attributes) < 5 or record_attributes[0] != '"relationship"':
         return None
     # add this record as edge
@@ -121,13 +114,10 @@ async def _handle_single_relationship_extraction(
     )
 
 
-async def _merge_nodes_then_upsert(
-    entity_name: str,
-    nodes_data: list[dict],
-    knowledge_graph_inst: BaseGraphStorage,
-    global_config: dict,
-):
-    already_entity_types = []
+async def _merge_nodes_then_upsert(entity_name: str, nodes_data: list[dict], knowledge_graph_inst: BaseGraphStorage, global_config: dict):
+    """find nodes with same entity_name and merge them into one node :
+    TODO: maybe use vector_store to merge dynamically by similarity"""
+    already_entitiy_types = []
     already_source_ids = []
     already_description = []
 
@@ -137,20 +127,19 @@ async def _merge_nodes_then_upsert(
         already_source_ids.extend(split_string_by_multi_markers(already_node["source_id"], [GRAPH_FIELD_SEP]))
         already_description.append(already_node["description"])
 
-    entity_type = sorted(
-        Counter([dp["entity_type"] for dp in nodes_data] + already_entitiy_types).items(),
-        key=lambda x: x[1],
-        reverse=True,
-    )[0][0]
+    old_and_new_entity_types = [dp["entity_type"] for dp in nodes_data] + already_entitiy_types
+    entity_type_counter_tuples = Counter(old_and_new_entity_types).items()  # {'entity_type': count} -> [(entity_type, count)]
+    entity_type_counter_sorted_list = sorted(entity_type_counter_tuples, key=lambda x: x[1], reverse=True)  # sort by count
+    most_frequent_entity_type = entity_type_counter_sorted_list[0][0]  # get the most frequent entity type
     description = GRAPH_FIELD_SEP.join(sorted(set([dp["description"] for dp in nodes_data] + already_description)))
     source_id = GRAPH_FIELD_SEP.join(set([dp["source_id"] for dp in nodes_data] + already_source_ids))
-    description = await _handle_entity_relation_summary(entity_name, description, global_config)
+    description = await _handle_entity_relation_summary(entity_name, description, global_config)  # recreate description
     node_data = dict(
-        entity_type=entity_type,
+        entity_type=most_frequent_entity_type,
         description=description,
         source_id=source_id,
     )
-    await knowledge_graph_inst.upsert_node(
+    await knowledge_graph_inst.upsert_node(  # insert node into graph storage
         entity_name,
         node_data=node_data,
     )
