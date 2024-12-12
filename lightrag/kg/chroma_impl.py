@@ -17,9 +17,7 @@ class ChromaVectorDBStorage(BaseVectorStorage):
     def __post_init__(self):
         try:
             # Use global config value if specified, otherwise use default
-            self.cosine_better_than_threshold = self.global_config.get(
-                "cosine_better_than_threshold", self.cosine_better_than_threshold
-            )
+            self.cosine_better_than_threshold = self.global_config.get("cosine_better_than_threshold", self.cosine_better_than_threshold)
 
             config = self.global_config.get("vector_db_storage_cls_kwargs", {})
             user_collection_settings = config.get("collection_settings", {})
@@ -47,16 +45,12 @@ class ChromaVectorDBStorage(BaseVectorStorage):
                 **user_collection_settings,
             }
 
-            auth_provider = config.get(
-                "auth_provider", "chromadb.auth.token_authn.TokenAuthClientProvider"
-            )
+            auth_provider = config.get("auth_provider", "chromadb.auth.token_authn.TokenAuthClientProvider")
             auth_credentials = config.get("auth_token", "secret-token")
             headers = {}
 
             if "token_authn" in auth_provider:
-                headers = {
-                    config.get("auth_header_name", "X-Chroma-Token"): auth_credentials
-                }
+                headers = {config.get("auth_header_name", "X-Chroma-Token"): auth_credentials}
             elif "basic_authn" in auth_provider:
                 auth_credentials = config.get("auth_credentials", "admin:admin")
 
@@ -81,9 +75,7 @@ class ChromaVectorDBStorage(BaseVectorStorage):
                 },
             )
             # Use batch size from collection settings if specified
-            self._max_batch_size = self.global_config.get(
-                "embedding_batch_num", collection_settings.get("hnsw:batch_size", 32)
-            )
+            self._max_batch_size = self.global_config.get("embedding_batch_num", collection_settings.get("hnsw:batch_size", 32))
         except Exception as e:
             logger.error(f"ChromaDB initialization failed: {str(e)}")
             raise
@@ -96,17 +88,10 @@ class ChromaVectorDBStorage(BaseVectorStorage):
         try:
             ids = list(data.keys())
             documents = [v["content"] for v in data.values()]
-            metadatas = [
-                {k: v for k, v in item.items() if k in self.meta_fields}
-                or {"_default": "true"}
-                for item in data.values()
-            ]
+            metadatas = [{k: v for k, v in item.items() if k in self.meta_fields} or {"_default": "true"} for item in data.values()]
 
             # Process in batches
-            batches = [
-                documents[i : i + self._max_batch_size]
-                for i in range(0, len(documents), self._max_batch_size)
-            ]
+            batches = [documents[i : i + self._max_batch_size] for i in range(0, len(documents), self._max_batch_size)]
 
             embedding_tasks = [self.embedding_func(batch) for batch in batches]
             embeddings_list = []

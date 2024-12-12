@@ -18,9 +18,7 @@ if not os.path.exists(WORKING_DIR):
 CHROMADB_HOST = os.environ.get("CHROMADB_HOST", "localhost")
 CHROMADB_PORT = int(os.environ.get("CHROMADB_PORT", 8000))
 CHROMADB_AUTH_TOKEN = os.environ.get("CHROMADB_AUTH_TOKEN", "secret-token")
-CHROMADB_AUTH_PROVIDER = os.environ.get(
-    "CHROMADB_AUTH_PROVIDER", "chromadb.auth.token_authn.TokenAuthClientProvider"
-)
+CHROMADB_AUTH_PROVIDER = os.environ.get("CHROMADB_AUTH_PROVIDER", "chromadb.auth.token_authn.TokenAuthClientProvider")
 CHROMADB_AUTH_HEADER = os.environ.get("CHROMADB_AUTH_HEADER", "X-Chroma-Token")
 
 # Embedding Configuration and Functions
@@ -93,21 +91,13 @@ rag = asyncio.run(initialize_rag())
 #     rag.insert(f.read())
 
 # Perform naive search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="naive"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="naive")))
 
 # Perform local search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="local"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="local")))
 
 # Perform global search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="global"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="global")))
 
 # Perform hybrid search
-print(
-    rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid"))
-)
+print(rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid")))

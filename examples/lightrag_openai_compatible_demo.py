@@ -11,9 +11,7 @@ if not os.path.exists(WORKING_DIR):
     os.mkdir(WORKING_DIR)
 
 
-async def llm_model_func(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def llm_model_func(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     return await openai_complete_if_cache(
         "solar-mini",
         prompt,
@@ -72,18 +70,10 @@ async def main():
             await rag.ainsert(f.read())
 
         # Perform naive search
-        print(
-            await rag.aquery(
-                "What are the top themes in this story?", param=QueryParam(mode="naive")
-            )
-        )
+        print(await rag.aquery("What are the top themes in this story?", param=QueryParam(mode="naive")))
 
         # Perform local search
-        print(
-            await rag.aquery(
-                "What are the top themes in this story?", param=QueryParam(mode="local")
-            )
-        )
+        print(await rag.aquery("What are the top themes in this story?", param=QueryParam(mode="local")))
 
         # Perform global search
         print(

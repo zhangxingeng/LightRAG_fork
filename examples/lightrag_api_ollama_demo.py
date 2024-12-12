@@ -38,9 +38,7 @@ rag = LightRAG(
     embedding_func=EmbeddingFunc(
         embedding_dim=768,
         max_token_size=8192,
-        func=lambda texts: ollama_embedding(
-            texts, embed_model="nomic-embed-text", host="http://localhost:11434"
-        ),
+        func=lambda texts: ollama_embedding(texts, embed_model="nomic-embed-text", host="http://localhost:11434"),
     ),
 )
 
@@ -71,9 +69,7 @@ async def query_endpoint(request: QueryRequest):
             None,
             lambda: rag.query(
                 request.query,
-                param=QueryParam(
-                    mode=request.mode, only_need_context=request.only_need_context
-                ),
+                param=QueryParam(mode=request.mode, only_need_context=request.only_need_context),
             ),
         )
         return Response(status="success", data=result)

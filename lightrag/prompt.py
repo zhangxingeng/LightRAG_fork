@@ -124,9 +124,7 @@ Output:
 #############################""",
 ]
 
-PROMPTS[
-    "summarize_entity_descriptions"
-] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
+PROMPTS["summarize_entity_descriptions"] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
 Given one or two entities, and a list of descriptions, all related to the same entity or group of entities.
 Please concatenate all of these into a single, comprehensive description. Make sure to include information collected from all the descriptions.
 If the provided descriptions are contradictory, please resolve the contradictions and provide a single, coherent summary.
@@ -141,14 +139,10 @@ Description List: {description_list}
 Output:
 """
 
-PROMPTS[
-    "entiti_continue_extraction"
-] = """MANY entities were missed in the last extraction.  Add them below using the same format:
+PROMPTS["entiti_continue_extraction"] = """MANY entities were missed in the last extraction.  Add them below using the same format:
 """
 
-PROMPTS[
-    "entiti_if_loop_extraction"
-] = """It appears some entities may have still been missed.  Answer YES | NO if there are still entities that need to be added.
+PROMPTS["entiti_if_loop_extraction"] = """It appears some entities may have still been missed.  Answer YES | NO if there are still entities that need to be added.
 """
 
 PROMPTS["fail_response"] = "Sorry, I'm not able to provide an answer to that question."
@@ -261,9 +255,7 @@ Do not include information where the supporting evidence for it is not provided.
 Add sections and commentary to the response as appropriate for the length and format. Style the response in markdown.
 """
 
-PROMPTS[
-    "similarity_check"
-] = """Please analyze the similarity between these two questions:
+PROMPTS["similarity_check"] = """Please analyze the similarity between these two questions:
 
 Question 1: {original_prompt}
 Question 2: {cached_prompt}

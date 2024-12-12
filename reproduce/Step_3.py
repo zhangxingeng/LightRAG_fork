@@ -33,21 +33,15 @@ def always_get_an_event_loop() -> asyncio.AbstractEventLoop:
     return loop
 
 
-def run_queries_and_save_to_json(
-    queries, rag_instance, query_param, output_file, error_file
-):
+def run_queries_and_save_to_json(queries, rag_instance, query_param, output_file, error_file):
     loop = always_get_an_event_loop()
 
-    with open(output_file, "a", encoding="utf-8") as result_file, open(
-        error_file, "a", encoding="utf-8"
-    ) as err_file:
+    with open(output_file, "a", encoding="utf-8") as result_file, open(error_file, "a", encoding="utf-8") as err_file:
         result_file.write("[\n")
         first_entry = True
 
         for query_text in tqdm(queries, desc="Processing queries", unit="query"):
-            result, error = loop.run_until_complete(
-                process_query(query_text, rag_instance, query_param)
-            )
+            result, error = loop.run_until_complete(process_query(query_text, rag_instance, query_param))
 
             if result:
                 if not first_entry:
@@ -70,6 +64,4 @@ if __name__ == "__main__":
     query_param = QueryParam(mode=mode)
 
     queries = extract_queries(f"../datasets/questions/{cls}_questions.txt")
-    run_queries_and_save_to_json(
-        queries, rag, query_param, f"{cls}_result.json", f"{cls}_errors.json"
-    )
+    run_queries_and_save_to_json(queries, rag, query_param, f"{cls}_result.json", f"{cls}_errors.json")

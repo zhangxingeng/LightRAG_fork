@@ -10,9 +10,7 @@ from lightrag.llm import openai_complete_if_cache, openai_embedding
 
 ## For Upstage API
 # please check if embedding_dim=4096 in lightrag.py and llm.py in lightrag direcotry
-async def llm_model_func(
-    prompt, system_prompt=None, history_messages=[], **kwargs
-) -> str:
+async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs) -> str:
     return await openai_complete_if_cache(
         "solar-mini",
         prompt,
@@ -63,9 +61,7 @@ if not os.path.exists(WORKING_DIR):
 rag = LightRAG(
     working_dir=WORKING_DIR,
     llm_model_func=llm_model_func,
-    embedding_func=EmbeddingFunc(
-        embedding_dim=4096, max_token_size=8192, func=embedding_func
-    ),
+    embedding_func=EmbeddingFunc(embedding_dim=4096, max_token_size=8192, func=embedding_func),
 )
 
 insert_text(rag, f"../datasets/unique_contexts/{cls}_unique_contexts.json")

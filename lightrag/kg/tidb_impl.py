@@ -19,10 +19,7 @@ class TiDB(object):
         self.password = config.get("password", None)
         self.database = config.get("database", None)
         self.workspace = config.get("workspace", None)
-        connection_string = (
-            f"mysql+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-            f"?ssl_verify_cert=true&ssl_verify_identity=true"
-        )
+        connection_string = f"mysql+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}" f"?ssl_verify_cert=true&ssl_verify_identity=true"
 
         try:
             self.engine = create_engine(connection_string)
@@ -47,9 +44,7 @@ class TiDB(object):
                     logger.error(f"Failed to create table {k} in TiDB database")
                     logger.error(f"TiDB database error: {e}")
 
-    async def query(
-        self, sql: str, params: dict = None, multirows: bool = False
-    ) -> Union[dict, None]:
+    async def query(self, sql: str, params: dict = None, multirows: bool = False) -> Union[dict, None]:
         if params is None:
             params = {"workspace": self.workspace}
         else:
@@ -116,9 +111,7 @@ class TiDBKVStorage(BaseKVStorage):
     # Query by id
     async def get_by_ids(self, ids: list[str], fields=None) -> Union[list[dict], None]:
         """根据 id 获取 doc_chunks 数据"""
-        SQL = SQL_TEMPLATES["get_by_ids_" + self.namespace].format(
-            ids=",".join([f"'{id}'" for id in ids])
-        )
+        SQL = SQL_TEMPLATES["get_by_ids_" + self.namespace].format(ids=",".join([f"'{id}'" for id in ids]))
         # print("get_by_ids:"+SQL)
         res = await self.db.query(SQL, multirows=True)
         if res:
@@ -162,13 +155,8 @@ class TiDBKVStorage(BaseKVStorage):
                 for k, v in data.items()
             ]
             contents = [v["content"] for v in data.values()]
-            batches = [
-                contents[i : i + self._max_batch_size]
-                for i in range(0, len(contents), self._max_batch_size)
-            ]
-            embeddings_list = await asyncio.gather(
-                *[self.embedding_func(batch) for batch in batches]
-            )
+            batches = [contents[i : i + self._max_batch_size] for i in range(0, len(contents), self._max_batch_size)]
+            embeddings_list = await asyncio.gather(*[self.embedding_func(batch) for batch in batches])
             embeddings = np.concatenate(embeddings_list)
             for i, d in enumerate(list_data):
                 d["__vector__"] = embeddings[i]
@@ -213,13 +201,9 @@ class TiDBVectorDBStorage(BaseVectorStorage):
     cosine_better_than_threshold: float = 0.2
 
     def __post_init__(self):
-        self._client_file_name = os.path.join(
-            self.global_config["working_dir"], f"vdb_{self.namespace}.json"
-        )
+        self._client_file_name = os.path.join(self.global_config["working_dir"], f"vdb_{self.namespace}.json")
         self._max_batch_size = self.global_config["embedding_batch_num"]
-        self.cosine_better_than_threshold = self.global_config.get(
-            "cosine_better_than_threshold", self.cosine_better_than_threshold
-        )
+        self.cosine_better_than_threshold = self.global_config.get("cosine_better_than_threshold", self.cosine_better_than_threshold)
 
     async def query(self, query: str, top_k: int) -> list[dict]:
         """search from tidb vector"""
@@ -235,9 +219,7 @@ class TiDBVectorDBStorage(BaseVectorStorage):
             "better_than_threshold": self.cosine_better_than_threshold,
         }
 
-        results = await self.db.query(
-            SQL_TEMPLATES[self.namespace], params=params, multirows=True
-        )
+        results = await self.db.query(SQL_TEMPLATES[self.namespace], params=params, multirows=True)
         print("vector search result:", results)
         if not results:
             return []
@@ -261,10 +243,7 @@ class TiDBVectorDBStorage(BaseVectorStorage):
             for k, v in data.items()
         ]
         contents = [v["content"] for v in data.values()]
-        batches = [
-            contents[i : i + self._max_batch_size]
-            for i in range(0, len(contents), self._max_batch_size)
-        ]
+        batches = [contents[i : i + self._max_batch_size] for i in range(0, len(contents), self._max_batch_size)]
         embedding_tasks = [self.embedding_func(batch) for batch in batches]
         embeddings_list = []
         for f in tqdm(

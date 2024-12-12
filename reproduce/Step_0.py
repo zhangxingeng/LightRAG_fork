@@ -32,9 +32,7 @@ def extract_unique_contexts(input_directory, output_directory):
                         if context and context not in unique_contexts_dict:
                             unique_contexts_dict[context] = None
                     except json.JSONDecodeError as e:
-                        print(
-                            f"JSON decoding error in file {filename} at line {line_number}: {e}"
-                        )
+                        print(f"JSON decoding error in file {filename} at line {line_number}: {e}")
         except FileNotFoundError:
             print(f"File not found: {filename}")
             continue
@@ -43,9 +41,7 @@ def extract_unique_contexts(input_directory, output_directory):
             continue
 
         unique_contexts_list = list(unique_contexts_dict.keys())
-        print(
-            f"There are {len(unique_contexts_list)} unique `context` entries in the file {filename}."
-        )
+        print(f"There are {len(unique_contexts_list)} unique `context` entries in the file {filename}.")
 
         try:
             with open(output_path, "w", encoding="utf-8") as outfile:
@@ -60,9 +56,7 @@ def extract_unique_contexts(input_directory, output_directory):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input_dir", type=str, default="../datasets")
-    parser.add_argument(
-        "-o", "--output_dir", type=str, default="../datasets/unique_contexts"
-    )
+    parser.add_argument("-o", "--output_dir", type=str, default="../datasets/unique_contexts")
 
     args = parser.parse_args()
 

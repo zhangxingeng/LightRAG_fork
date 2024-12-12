@@ -19,12 +19,7 @@ def retrieve_metadata():
             for line in f.readlines():
                 for v in vars2find:
                     if line.startswith(v):
-                        line = (
-                            line.replace(" ", "")
-                            .replace('"', "")
-                            .replace("'", "")
-                            .strip()
-                        )
+                        line = line.replace(" ", "").replace('"', "").replace("'", "").strip()
                         vars2readme[v] = line.split("=")[1]
     except FileNotFoundError:
         raise FileNotFoundError("Metadata file './lightrag/__init__.py' not found.")
@@ -32,9 +27,7 @@ def retrieve_metadata():
     # Checking if all required variables are found
     missing_vars = [v for v in vars2find if v not in vars2readme]
     if missing_vars:
-        raise ValueError(
-            f"Missing required metadata variables in __init__.py: {missing_vars}"
-        )
+        raise ValueError(f"Missing required metadata variables in __init__.py: {missing_vars}")
 
     return vars2readme
 
@@ -46,9 +39,7 @@ def read_requirements():
         with open("./requirements.txt") as f:
             deps = [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
-        print(
-            "Warning: 'requirements.txt' not found. No dependencies will be installed."
-        )
+        print("Warning: 'requirements.txt' not found. No dependencies will be installed.")
     return deps
 
 
@@ -64,9 +55,7 @@ setuptools.setup(
     description="LightRAG: Simple and Fast Retrieval-Augmented Generation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=setuptools.find_packages(
-        exclude=("tests*", "docs*")
-    ),  # Automatically find packages
+    packages=setuptools.find_packages(exclude=("tests*", "docs*")),  # Automatically find packages
     classifiers=[
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
@@ -81,8 +70,6 @@ setuptools.setup(
     project_urls={  # Additional project metadata
         "Documentation": metadata.get("__url__", ""),
         "Source": metadata.get("__url__", ""),
-        "Tracker": f"{metadata.get('__url__', '')}/issues"
-        if metadata.get("__url__")
-        else "",
+        "Tracker": f"{metadata.get('__url__', '')}/issues" if metadata.get("__url__") else "",
     },
 )

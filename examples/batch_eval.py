@@ -89,9 +89,7 @@ def batch_eval(query_file, result1_file, result2_file, output_file_path):
 
     print(f"Batch API requests written to {output_file_path}")
 
-    batch_input_file = client.files.create(
-        file=open(output_file_path, "rb"), purpose="batch"
-    )
+    batch_input_file = client.files.create(file=open(output_file_path, "rb"), purpose="batch")
     batch_input_file_id = batch_input_file.id
 
     batch = client.batches.create(

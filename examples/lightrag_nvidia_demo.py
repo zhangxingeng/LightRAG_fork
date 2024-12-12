@@ -25,9 +25,7 @@ NVIDIA_OPENAI_API_KEY = "nvapi-xxxx"  # your api key
 
 
 # If you trying to make custom llm_model_func to use llm model on NVIDIA API like other example:
-async def llm_model_func(
-    prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> str:
+async def llm_model_func(prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs) -> str:
     result = await openai_complete_if_cache(
         "nvidia/llama-3.1-nemotron-70b-instruct",
         prompt,
@@ -129,19 +127,11 @@ async def main():
 
         # Perform naive search
         print("==============Naive===============")
-        print(
-            await rag.aquery(
-                "What are the top themes in this story?", param=QueryParam(mode="naive")
-            )
-        )
+        print(await rag.aquery("What are the top themes in this story?", param=QueryParam(mode="naive")))
 
         # Perform local search
         print("==============local===============")
-        print(
-            await rag.aquery(
-                "What are the top themes in this story?", param=QueryParam(mode="local")
-            )
-        )
+        print(await rag.aquery("What are the top themes in this story?", param=QueryParam(mode="local")))
 
         # Perform global search
         print("==============global===============")
