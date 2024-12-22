@@ -26,7 +26,7 @@ rag = LightRAG(
 
 
 response = requests.get("https://raw.githubusercontent.com/gusye1234/nano-graphrag/main/tests/mock_data.txt")
-rag.insert([response.text[:1000], response.text[1000:2000]])
+rag.insert(response.text)
 
 
 # read some text file from data/ folder with .md ending then append to text_units
@@ -41,4 +41,4 @@ rag.insert([response.text[:1000], response.text[1000:2000]])
 # print(rag.query("What are the top themes in this story?", param=QueryParam(mode="global")))
 
 # Perform hybrid search
-print(rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid")))
+# print(rag.query("What are the top themes in this story?", param=QueryParam(mode="hybrid")))
